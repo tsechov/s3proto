@@ -1,8 +1,9 @@
 package sun.net.www.protocol.s3;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 
@@ -19,34 +20,24 @@ import static java.lang.System.getProperty;
 public class Handler extends URLStreamHandler {
 
 
-    public static final String AWS_SOCKET_TIMEOUT = "AWS_SOCKET_TIMEOUT";
-    public static final int DEFAULT_AWS_SOCKET_TIMEOUT = 30000;
-
     protected URLConnection openConnection(URL url) throws IOException {
-        checkArgument(s3InUrl(url) > 0, "invalid s3 url. missing s3.amazonaws.com suffix from host: %s", url.getHost());
+        final int prefixEndPosition = s3InUrl(url);
+        checkArgument(prefixEndPosition > 0, "invalid s3 url. missing s3.amazonaws.com suffix from host: %s", url.getHost());
 
         return new URLConnection(url) {
 
             @Override
             public InputStream getInputStream() throws IOException {
 
-                String bucket = url.getHost().substring(0, s3InUrl(url));
+                String bucket = url.getHost().substring(0, prefixEndPosition);
 
                 String key = url.getPath().substring(1);
 
-                String timeout = getProperty(AWS_SOCKET_TIMEOUT, String.valueOf(DEFAULT_AWS_SOCKET_TIMEOUT));
-
-                BasicAWSCredentials credentials = credentialsBuilder().getCredentials(url);
-
-                ClientConfiguration client = configuration();
-
-                client.setSocketTimeout(Integer.parseInt(timeout));
-
-                AmazonS3Client amazonS3Client = s3Client(credentials, client);
+                AmazonS3 s3 = client(credentials().build(url)).build();
 
                 GetObjectRequest request = request(bucket, key);
 
-                S3Object s3obj = amazonS3Client.getObject(request);
+                S3Object s3obj = s3.getObject(request);
 
                 return s3obj.getObjectContent();
 
@@ -57,6 +48,7 @@ public class Handler extends URLStreamHandler {
             }
         };
     }
+
 
     @Override
     protected void parseURL(URL u, String spec, int start, int limit) {
@@ -86,21 +78,19 @@ public class Handler extends URLStreamHandler {
     }
 
 
-    protected CredentialsBuilder credentialsBuilder() {
-        return new CredentialsBuilder();
-    }
-
     protected GetObjectRequest request(String bucket, String key) {
         return new GetObjectRequest(bucket, key);
     }
 
-    protected AmazonS3Client s3Client(BasicAWSCredentials credentials, ClientConfiguration client) {
-        return new AmazonS3Client(credentials, client);
+    protected CredentialsProviderChainBuilder credentials() {
+        return new CredentialsProviderChainBuilder();
+
     }
 
-    public ClientConfiguration configuration() {
-        return new ClientConfiguration();
+    protected S3ClientBuilder client(AWSCredentialsProvider credentialsProvider) {
+        return new S3ClientBuilder(credentialsProvider);
     }
+
 
     private int s3InUrl(URL url) {
         return url.getHost().indexOf(".s3.amazonaws.com");

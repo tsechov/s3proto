@@ -7,9 +7,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>s3proto</name>
     <url>https://github.com/tschoohuy/s3proto</url>
-    <properties>
-        <powermock.version>1.5.6</powermock.version>
-    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
