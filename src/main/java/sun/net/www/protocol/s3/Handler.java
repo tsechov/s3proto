@@ -24,7 +24,7 @@ public class Handler extends URLStreamHandler {
 
     protected URLConnection openConnection(URL url) throws IOException {
         checkArgument(s3InUrl(url) > 0, "invalid s3 url. missing s3.amazonaws.com suffix from host: %s", url.getHost());
-        final ClientConfiguration client = new ClientConfiguration();
+
         return new URLConnection(url) {
 
             @Override
@@ -38,6 +38,7 @@ public class Handler extends URLStreamHandler {
 
                 BasicAWSCredentials credentials = credentialsBuilder().getCredentials(url);
 
+                ClientConfiguration client = configuration();
 
                 client.setSocketTimeout(Integer.parseInt(timeout));
 

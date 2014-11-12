@@ -1,22 +1,21 @@
 package sun.net.www.protocol.s3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 
-
-import org.powermock.core.classloader.annotations.Mock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.net.URL;
 import java.net.URLConnection;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(Handler.class)
+@RunWith(MockitoJUnitRunner.class)
+
 public class HandlerTest {
 
     //    @Test
@@ -41,18 +40,26 @@ public class HandlerTest {
 //
 //    }
 
+    @Mock
+    private CredentialsBuilder credentialsBuilder;
+    @Mock
+    private GetObjectRequest request;
+    @Mock
+    private AmazonS3Client s3Client;
+    @Mock
+    private ClientConfiguration configMock;
 
     @Test
     public void testNew() throws Exception {
 
-        System.out.println("blah");
-        ClientConfiguration configMock = PowerMockito.mock(ClientConfiguration.class);
-        PowerMockito.whenNew(ClientConfiguration.class).withNoArguments().thenReturn(configMock);
-//
-        Handler target = new Handler();
-        URL url = new URL("s3://dev-shoehorn.s3.amazonaws.com/foo");
-        URLConnection result = target.openConnection(url);
 
+//
+        Handler target = Mockito.spy(new Handler());
+        Mockito.doReturn(configMock).when(target).configuration();
+
+
+        ClientConfiguration result = target.configuration();
+        Assert.assertEquals(configMock, result);
 
     }
 
