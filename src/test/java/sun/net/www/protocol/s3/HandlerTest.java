@@ -1,11 +1,19 @@
 package sun.net.www.protocol.s3;
 
 import com.amazonaws.ClientConfiguration;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockitoAnnotations;
 import org.powermock.api.mockito.PowerMockito;
+
+
+import org.powermock.core.classloader.annotations.Mock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.net.URL;
+import java.net.URLConnection;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Handler.class)
@@ -32,8 +40,7 @@ public class HandlerTest {
 //        assertEquals("bar", result);
 //
 //    }
-//    @Mock
-//    private ClientConfiguration configMock;
+
 
     @Test
     public void testNew() throws Exception {
@@ -42,9 +49,10 @@ public class HandlerTest {
         ClientConfiguration configMock = PowerMockito.mock(ClientConfiguration.class);
         PowerMockito.whenNew(ClientConfiguration.class).withNoArguments().thenReturn(configMock);
 //
-//        Handler target = new Handler();
-//        ClientConfiguration result = target.configuration();
-//        Assert.assertEquals(configMock, result);
+        Handler target = new Handler();
+        URL url = new URL("s3://dev-shoehorn.s3.amazonaws.com/foo");
+        URLConnection result = target.openConnection(url);
+
 
     }
 
