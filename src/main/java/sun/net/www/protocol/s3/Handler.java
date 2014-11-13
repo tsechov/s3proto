@@ -1,20 +1,14 @@
 package sun.net.www.protocol.s3;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.System.getProperty;
 
 
 public class Handler extends URLStreamHandler {
@@ -24,29 +18,13 @@ public class Handler extends URLStreamHandler {
         final int prefixEndPosition = s3InUrl(url);
         checkArgument(prefixEndPosition > 0, "invalid s3 url. missing s3.amazonaws.com suffix from host: %s", url.getHost());
 
-        return new URLConnection(url) {
+        String bucket = url.getHost().substring(0, prefixEndPosition);
 
-            @Override
-            public InputStream getInputStream() throws IOException {
+        AWSCredentials creds = credentials().build(url).getCredentials();
 
-                String bucket = url.getHost().substring(0, prefixEndPosition);
+        AmazonS3 s3 = client().build(creds);
 
-                String key = url.getPath().substring(1);
-
-                AmazonS3 s3 = client(credentials().build(url)).build();
-
-                GetObjectRequest request = request(bucket, key);
-
-                S3Object s3obj = s3.getObject(request);
-
-                return s3obj.getObjectContent();
-
-            }
-
-            @Override
-            public void connect() throws IOException {
-            }
-        };
+        return connection(url, s3, bucket);
     }
 
 
@@ -77,18 +55,17 @@ public class Handler extends URLStreamHandler {
         );
     }
 
-
-    protected GetObjectRequest request(String bucket, String key) {
-        return new GetObjectRequest(bucket, key);
-    }
-
     protected CredentialsProviderChainBuilder credentials() {
         return new CredentialsProviderChainBuilder();
-
     }
 
-    protected S3ClientBuilder client(AWSCredentialsProvider credentialsProvider) {
-        return new S3ClientBuilder(credentialsProvider);
+    protected S3UrlConnection connection(URL url, AmazonS3 s3, String bucket) {
+        return new S3UrlConnection(url, s3, bucket);
+    }
+
+
+    protected S3ClientBuilder client() {
+        return new S3ClientBuilder();
     }
 
 

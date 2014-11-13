@@ -1,54 +1,64 @@
 package sun.net.www.protocol.s3;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.SDKGlobalConfiguration;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.util.IOUtils;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+import static sun.net.www.protocol.s3.Randoms.randomString;
 
 @RunWith(MockitoJUnitRunner.class)
-
 public class HandlerTest {
 
-    @Mock
-    private UserInfoCredentialsProvider credentialsBuilder;
+
     @Mock
     private GetObjectRequest request;
     @Mock
     private AmazonS3Client s3Client;
     @Mock
     private ClientConfiguration configMock;
+    @Mock
+    private CredentialsProviderChainBuilder credsBuilder;
+    @Mock
+    private AWSCredentialsProvider credsProvider;
+    @Mock
+    private AWSCredentials creds;
+    @Mock
+    private S3ClientBuilder clientBuilder;
+    @Mock
+    private AmazonS3 s3;
+
+    @Mock
+    private S3UrlConnection connection;
 
     @Test
-    public void testWithEnvVars() throws Exception {
-        System.setProperty(SDKGlobalConfiguration.ACCESS_KEY_SYSTEM_PROPERTY, "AKIAI6IQPXKOPXEVOM6A");
-        System.setProperty(SDKGlobalConfiguration.SECRET_KEY_SYSTEM_PROPERTY, "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");
-        URL url = new URL("s3://dev-shoehorn.s3.amazonaws.com/foo");
-        InputStream stream = url.openStream();
-        String result = IOUtils.toString(stream);
+    public void getInputStream() throws IOException {
+        Handler target = spy(new Handler());
+        String expectedBucket = randomString();
+        URL url = new URL(String.format("s3://%s.s3.amazonaws.com/baz", expectedBucket));
 
-        assertEquals("bar", result);
+        doReturn(credsBuilder).when(target).credentials();
+        when(credsBuilder.build(url)).thenReturn(credsProvider);
+        when(credsProvider.getCredentials()).thenReturn(creds);
+        doReturn(clientBuilder).when(target).client();
+        when(clientBuilder.build(creds)).thenReturn(s3);
+        doReturn(connection).when(target).connection(url, s3, expectedBucket);
 
-    }
+        URLConnection result = target.openConnection(url);
 
-    @Test
-    public void test() throws Exception {
-        URL url = new URL("s3://AKIAI6IQPXKOPXEVOM6A:fbRcna3wva0dAmqrFVlZHTtN/EFyG4je6zz8iqlN@dev-shoehorn.s3.amazonaws.com/foo");
-        InputStream stream = url.openStream();
-        String result = IOUtils.toString(stream);
-
-        assertEquals("bar", result);
-
+        assertEquals(connection, result);
     }
 
 
