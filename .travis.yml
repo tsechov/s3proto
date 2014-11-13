@@ -1,9 +1,6 @@
 language: java
 jdk: oraclejdk7
 
-env:
-  global:
-    -secure: "WqufCdslQu/8sfbH4xUCdEVs2qZ9+SGGYLv3p9Tih83k6ONr+oPEDG9jd6Gk1si42VcqEvgV5NW+oGlfz9wh1z1R8ouTdCq9SjLPzpijTNWTb+fRht98UTEqk0hdZm3P1tkI8VOcbdhZAB2LThw3QKD4qd4lCVlRbeNnsMGMY1I="
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
