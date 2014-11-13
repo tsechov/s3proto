@@ -8,10 +8,12 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -47,19 +49,31 @@ public class HandlerTest {
     public void getInputStream() throws IOException {
         Handler target = spy(new Handler());
         String expectedBucket = randomString();
-        URL url = new URL(String.format("s3://%s.s3.amazonaws.com/baz", expectedBucket));
+        String expectedKey = randomString();
+        URL url = new URL(String.format("s3://%s/%s", expectedBucket, expectedKey));
 
         doReturn(credsBuilder).when(target).credentials();
         when(credsBuilder.build(url)).thenReturn(credsProvider);
         when(credsProvider.getCredentials()).thenReturn(creds);
         doReturn(clientBuilder).when(target).client();
         when(clientBuilder.build(creds)).thenReturn(s3);
-        doReturn(connection).when(target).connection(url, s3, expectedBucket);
+        ArgumentCaptor<GetObjectRequest> captor = ArgumentCaptor.forClass(GetObjectRequest.class);
+        doReturn(connection).when(target).connection(eq(url), eq(s3), captor.capture());
 
         URLConnection result = target.openConnection(url);
 
+        assertEquals(expectedBucket, captor.getValue().getBucketName());
+        assertEquals(expectedKey, captor.getValue().getKey());
+
         assertEquals(connection, result);
     }
+
+    @Test
+    public void integration() throws IOException {
+        Handler target = new Handler();
+        target.openConnection(new URL("s3://john:doe@foo/bar"));
+    }
+
 
 
 }

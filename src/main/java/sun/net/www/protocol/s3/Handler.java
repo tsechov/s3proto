@@ -2,29 +2,39 @@ package sun.net.www.protocol.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 
 public class Handler extends URLStreamHandler {
 
 
     protected URLConnection openConnection(URL url) throws IOException {
-        final int prefixEndPosition = s3InUrl(url);
-        checkArgument(prefixEndPosition > 0, "invalid s3 url. missing s3.amazonaws.com suffix from host: %s", url.getHost());
+        AmazonS3URI s3Uri = s3Uri(url);
 
-        String bucket = url.getHost().substring(0, prefixEndPosition);
+
+        String bucket = s3Uri.getBucket();
+        String key = s3Uri.getKey();
 
         AWSCredentials creds = credentials().build(url).getCredentials();
 
         AmazonS3 s3 = client().build(creds);
 
-        return connection(url, s3, bucket);
+        return connection(url, s3, new GetObjectRequest(bucket, key));
+    }
+
+    private AmazonS3URI s3Uri(URL url) {
+        try {
+            return new AmazonS3URI(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
 
@@ -59,18 +69,13 @@ public class Handler extends URLStreamHandler {
         return new CredentialsProviderChainBuilder();
     }
 
-    protected S3UrlConnection connection(URL url, AmazonS3 s3, String bucket) {
-        return new S3UrlConnection(url, s3, bucket);
+    protected S3UrlConnection connection(URL url, AmazonS3 s3, GetObjectRequest request) {
+        return new S3UrlConnection(url, s3, request);
     }
 
 
     protected S3ClientBuilder client() {
         return new S3ClientBuilder();
-    }
-
-
-    private int s3InUrl(URL url) {
-        return url.getHost().indexOf(".s3.amazonaws.com");
     }
 
 

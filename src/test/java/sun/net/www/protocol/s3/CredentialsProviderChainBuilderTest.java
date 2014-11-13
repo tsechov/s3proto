@@ -30,7 +30,7 @@ public class CredentialsProviderChainBuilderTest {
     }
 
     @Test
-    public void testBuild() throws Exception {
+    public void build() throws Exception {
         URL url = new URL("s3://foo.bar/baz");
         CredentialsProviderChainBuilder target = spy(new CredentialsProviderChainBuilder());
         doReturn(defaultChain).when(target).defaultProvider();

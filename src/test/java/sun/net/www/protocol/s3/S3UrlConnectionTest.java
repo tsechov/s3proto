@@ -13,6 +13,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
@@ -32,26 +33,34 @@ public class S3UrlConnectionTest {
     @Mock
     private S3ObjectInputStream expectedResult;
 
+    @Mock
+    private GetObjectRequest request;
+
 
     @Test
-    public void test() throws IOException {
-        String expectedKey = randomString();
-        URL url = new URL("s3://foo.bar/" + expectedKey);
-        String bucket = randomString();
-        S3UrlConnection target = spy(new S3UrlConnection(url, s3, bucket));
+    public void getInputStream() throws IOException {
+
+        URL url = new URL("s3://foo.bar/baz");
+
+        S3UrlConnection target = spy(new S3UrlConnection(url, s3, request));
 
 
-        ArgumentCaptor<GetObjectRequest> captor = ArgumentCaptor.forClass(GetObjectRequest.class);
-        when(s3.getObject(captor.capture())).thenReturn(s3Object);
+        when(s3.getObject(request)).thenReturn(s3Object);
         when(s3Object.getObjectContent()).thenReturn(expectedResult);
 
         InputStream result = target.getInputStream();
 
-        assertEquals(bucket, captor.getValue().getBucketName());
-        assertEquals(expectedKey, captor.getValue().getKey());
-
 
         assertEquals(expectedResult, result);
 
+    }
+
+    @Test
+    public void connect() throws IOException {
+        URL url = new URL("s3://foo.bar/baz");
+
+        S3UrlConnection target = new S3UrlConnection(url, s3, request);
+
+        target.connect();
     }
 }

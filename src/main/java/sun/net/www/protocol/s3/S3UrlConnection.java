@@ -12,20 +12,18 @@ import java.net.URLConnection;
 public class S3UrlConnection extends URLConnection {
 
     private final AmazonS3 s3;
-    private final String bucket;
+    private final GetObjectRequest request;
 
-    public S3UrlConnection(URL url, AmazonS3 s3, String bucket) {
+    public S3UrlConnection(URL url, AmazonS3 s3, GetObjectRequest request) {
         super(url);
         this.s3 = s3;
-        this.bucket = bucket;
+        this.request = request;
     }
 
     @Override
     public InputStream getInputStream() throws IOException {
 
-        String key = url.getPath().substring(1);
-
-        S3Object s3obj = s3.getObject(new GetObjectRequest(bucket, key));
+        S3Object s3obj = s3.getObject(request);
 
         return s3obj.getObjectContent();
 
